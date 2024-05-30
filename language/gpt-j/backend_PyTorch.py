@@ -212,10 +212,10 @@ class SUT_SingleStream(SUT_base):
 
 
 
-def get_SUT(model_path, scenario, dtype, dataset_path, max_examples, use_gpu=False, network=None):
+def get_SUT(model_path, scenario, dtype, use_gpu=False, network=None):
     if scenario == "Offline":
-        return SUT_Offline(model_path, dtype, dataset_path, max_examples, use_gpu, network)
+        return SUT_Offline(model_path, dtype, use_gpu, network)
     elif scenario == "Server":
-        return SUT_Server(model_path, dtype, dataset_path, max_examples, use_gpu, network)
+        return SUT_Server(model_path, dtype, use_gpu, network)
     elif scenario == "SingleStream":
-        return SUT_SingleStream(model_path, dtype, dataset_path, max_examples, use_gpu, network)
+        return SUT_SingleStream(model_path, dtype, use_gpu, network)
