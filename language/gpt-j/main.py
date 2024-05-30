@@ -147,11 +147,13 @@ def main():
 
     print("Test Done!")
 
-    print("Destroying SUT...")
-    lg.DestroySUT(sut.sut)
+    if args.network != "lon":
+        print("Destroying SUT...")
+        lg.DestroySUT(sut.sut)
 
-    print("Destroying QSL...")
-    lg.DestroyQSL(sut.qsl)
+    if args.network != "sut":
+        print("Destroying QSL...")
+        lg.DestroyQSL(qsl.qsl)
 
 
 if __name__ == "__main__":
