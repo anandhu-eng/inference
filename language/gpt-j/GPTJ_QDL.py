@@ -16,10 +16,11 @@ class GPTJ_QDL:
     - /predict/ : Send a query to the SUT and get a response.
     - /getname/ : Get the name of the SUT. Send a getname to the SUT and get a response.
     """
-    def __init__(self, sut_server_addr: list, scenario: str):
+    def __init__(self, qsl, sut_server_addr: list, scenario: str):
         self.scenario = scenario
         self.sut_server_addr = sut_server_addr
         self.num_nodes = len(sut_server_addr)
+        self.qsl = qsl
 
         # Construct QDL from the python binding
         self.qdl = lg.ConstructQDL(
@@ -60,7 +61,7 @@ class GPTJ_QDL:
             print("Executing Offline scenario!")
             for i in range(len(query_samples)):
                 index = query_samples[i].index
-                query = self.sut.data_object.sources[index]
+                query = self.qsl.data_object.sources[index]
                 n = threading.active_count()
                 while n >= max_num_threads:
                     sleep(0.0001)
@@ -73,7 +74,7 @@ class GPTJ_QDL:
             print("Executing SingleStream scenario!")
             for i in range(len(query_samples)):
                 index = query_samples[i].index
-                query = self.sut.data_object.sources[index]
+                query = self.qsl.data_object.sources[index]
                 self.client_predict_worker(query, query_samples[i].id)
     
     def get_sut_id_round_robin(self):
@@ -93,8 +94,8 @@ class GPTJ_QDL:
         print(f"Latency = {endTime-startTime}")
         output = response.json()['result']
         response_text = output["response_text"]
-        # print(query)
-        # print(response_text)
+        print(query)
+        print(response_text)
         output_batch = np.array(output["pred_output_batch"]).astype(np.int32)
         response_array = array.array("B", output_batch.tobytes())
         bi = response_array.buffer_info()

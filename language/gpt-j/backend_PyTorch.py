@@ -88,7 +88,7 @@ class SUT_base():
 
         self.sut = lg.ConstructSUT(self.issue_queries, self.flush_queries)
 
-        if self.network == None:
+        if not self.network == "lon":
             from GPTJ_QSL import get_GPTJ_QSL
             self.qsl = get_GPTJ_QSL(
                 dataset_path=self.dataset_path,
