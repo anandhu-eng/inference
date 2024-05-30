@@ -19,11 +19,13 @@ gen_kwargs = {
 
 
 class SUT_base():
-    def __init__(self, model_path, dtype, use_gpu=False, network=None):
+    def __init__(self, model_path, dtype, dataset_path, max_examples, use_gpu=False, network=None):
         self.network = network
         self.model_name = "EleutherAI/gpt-j-6B"
         self.model_path = model_path
         self.use_gpu = use_gpu
+        self.dataset_path = dataset_path
+        self.max_examples = max_examples
         print("Loading PyTorch model...")
             
         # dtype
@@ -86,6 +88,13 @@ class SUT_base():
 
         self.sut = lg.ConstructSUT(self.issue_queries, self.flush_queries)
 
+        if self.network == None:
+            from GPTJ_QSL import get_GPTJ_QSL
+            self.qsl = get_GPTJ_QSL(
+                dataset_path=self.dataset_path,
+                max_examples=self.max_examples
+            )
+
     def issue_queries(self, query_samples):
         print("Number of Samples in query_samples : ", len(query_samples))
 
@@ -95,13 +104,13 @@ class SUT_base():
 
         for i in tqdm(range(len(query_samples))):
             index = query_samples[i].index
-            query = self.data_object.sources[index]
+            query = self.qsl.data_object.sources[index]
             self.inference_call(query, query_samples[i].id)
 
     def inference_call(self, query, query_id=None):
         ''' Common for all scenarios '''
         torch_device_type = 'cuda' if self.use_gpu else 'cpu'
-        input_ids_tensor, input_masks_tensor = self.data_object.encode_input_from_network(query)
+        input_ids_tensor, input_masks_tensor = self.qsl.data_object.encode_input_from_network(query)
         input_ids_tensor = input_ids_tensor.to(torch_device_type)
         input_masks_tensor = input_masks_tensor.to(torch_device_type)           
 
@@ -162,8 +171,8 @@ class SUT_Server(SUT_base):
     def issue_queries(self, query_samples):
 
         index = query_samples[0].index
-        input_ids_tensor = self.data_object.source_encoded_input_ids[index]
-        input_masks_tensor = self.data_object.source_encoded_attn_masks[index]
+        input_ids_tensor = self.qsl.data_object.source_encoded_input_ids[index]
+        input_masks_tensor = self.qsl.data_object.source_encoded_attn_masks[index]
 
         if self.use_gpu:
             input_ids_tensor = input_ids_tensor.to(self.device)
@@ -190,8 +199,8 @@ class SUT_SingleStream(SUT_base):
     def issue_queries(self, query_samples):
 
         index = query_samples[0].index
-        input_ids_tensor = self.data_object.source_encoded_input_ids[index]
-        input_masks_tensor = self.data_object.source_encoded_attn_masks[index]
+        input_ids_tensor = self.qsl.data_object.source_encoded_input_ids[index]
+        input_masks_tensor = self.qsl.data_object.source_encoded_attn_masks[index]
 
         if self.use_gpu:
             input_ids_tensor = input_ids_tensor.to(self.device)
@@ -212,10 +221,10 @@ class SUT_SingleStream(SUT_base):
 
 
 
-def get_SUT(model_path, scenario, dtype, use_gpu=False, network=None):
+def get_SUT(model_path, scenario, dtype, dataset_path, max_examples, use_gpu=False, network=None):
     if scenario == "Offline":
-        return SUT_Offline(model_path, dtype, use_gpu, network)
+        return SUT_Offline(model_path, dtype, dataset_path, max_examples, use_gpu, network)
     elif scenario == "Server":
-        return SUT_Server(model_path, dtype, use_gpu, network)
+        return SUT_Server(model_path, dtype, dataset_path, max_examples, use_gpu, network)
     elif scenario == "SingleStream":
-        return SUT_SingleStream(model_path, dtype, use_gpu, network)
+        return SUT_SingleStream(model_path, dtype, dataset_path, max_examples, use_gpu, network)

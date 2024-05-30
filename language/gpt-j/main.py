@@ -71,13 +71,15 @@ def main():
             dtype=args.dtype,
             use_gpu=args.gpu,
             network=args.network,
+            dataset_path=args.dataset_path,
+            max_examples=args.max_examples
         )
     elif args.network != "sut":
         # Gets the Query Data Loader and Query Sample Loader
         # Responsible for loading(Query Sample Loader) and sending samples over the network(Query Data Loader) to the server
         qdl = GPTJ_QDL(
             sut_server_addr=args.sut_server, 
-            scenario=args.scenario,
+            scenario=args.scenario
         )
         qsl = get_GPTJ_QSL(
             dataset_path=args.dataset_path,
