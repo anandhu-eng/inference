@@ -7,7 +7,6 @@ from torch.nn.functional import pad
 from torch.utils.data import DataLoader
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import mlperf_loadgen as lg
-from dataset import Dataset
 from tqdm import tqdm
 from accelerate import disk_offload
 
@@ -21,79 +20,80 @@ gen_kwargs = {
 
 class SUT_base():
     def __init__(self, model_path, dtype, dataset_path, max_examples, use_gpu=False, network=None):
-        # TODO : Pass model file name to init instead of args
-        self.dataset_path = dataset_path
         self.network = network
         self.model_name = "EleutherAI/gpt-j-6B"
         self.model_path = model_path
         self.use_gpu = use_gpu
-        if not self.network == "lon":
-            print("Loading PyTorch model...")
+        self.dataset_path = dataset_path
+        self.max_examples = max_examples
+        print("Loading PyTorch model...")
             
-            # dtype
-            if dtype == 'bfloat16':
-                self.amp_enabled = True
-                self.amp_dtype = torch.bfloat16
-                print("BF16 autocast")
-            elif dtype == 'float16':
-                self.amp_enabled = True
-                self.amp_dtype = torch.float16
-            else:
-                self.amp_enabled = False
-                self.amp_dtype = torch.float32
-            try:
+        # dtype
+        if dtype == 'bfloat16':
+            self.amp_enabled = True
+            self.amp_dtype = torch.bfloat16
+            print("BF16 autocast")
+        elif dtype == 'float16':
+            self.amp_enabled = True
+            self.amp_dtype = torch.float16
+        else:
+            self.amp_enabled = False
+            self.amp_dtype = torch.float32
+        try:
+            self.model = AutoModelForCausalLM.from_pretrained(
+                self.model_path,
+                device_map="auto" if not self.use_gpu else None,
+                low_cpu_mem_usage=True if not self.use_gpu else False,
+                torch_dtype=self.amp_dtype,
+                offload_folder="offload" if not self.use_gpu else None,    # specify offload folder when using devices with less RAM
+                offload_state_dict = True if not self.use_gpu else False   # to have some shards of the model to be on the disk
+            )
+        except ValueError as e:
+            if "disk_offload" in str(e):
+                print("Offloading the whole model to disk...")
                 self.model = AutoModelForCausalLM.from_pretrained(
                     self.model_path,
-                    device_map="auto" if not self.use_gpu else None,
                     low_cpu_mem_usage=True if not self.use_gpu else False,
                     torch_dtype=self.amp_dtype,
-                    offload_folder="offload" if not self.use_gpu else None,    # specify offload folder when using devices with less RAM
                     offload_state_dict = True if not self.use_gpu else False   # to have some shards of the model to be on the disk
-                )
-            except ValueError as e:
-                if "disk_offload" in str(e):
-                    print("Offloading the whole model to disk...")
-                    self.model = AutoModelForCausalLM.from_pretrained(
-                        self.model_path,
-                        low_cpu_mem_usage=True if not self.use_gpu else False,
-                        torch_dtype=self.amp_dtype,
-                        offload_state_dict = True if not self.use_gpu else False   # to have some shards of the model to be on the disk
-                    ).cpu()
-                    disk_offload(model=self.model, offload_dir="offload")
+                ).cpu()
+                disk_offload(model=self.model, offload_dir="offload")
 
-            # Cast the model to GPU if the flag is set.
-            if self.use_gpu:
-                print(f"Casting models to GPU...")
-                assert torch.cuda.is_available(), "torch gpu is not available, exiting..."
-                self.device = torch.device("cuda:0")
-                self.model.to(self.device)
+        # Cast the model to GPU if the flag is set.
+        if self.use_gpu:
+            print(f"Casting models to GPU...")
+            assert torch.cuda.is_available(), "torch gpu is not available, exiting..."
+            self.device = torch.device("cuda:0")
+            self.model.to(self.device)
 
-            self.model.eval()
-            try: # for systems with low ram, the below command gives error as some part is offloaded to disk
-                self.model = self.model.to(memory_format=torch.channels_last)
-            except:
-                pass
+        self.model.eval()
+        try: # for systems with low ram, the below command gives error as some part is offloaded to disk
+            self.model = self.model.to(memory_format=torch.channels_last)
+        except:
+            pass
 
-            self.tokenizer = AutoTokenizer.from_pretrained(
-                self.model_name,
-                model_max_length=1919,
-                padding_side="left",
-                use_fast=False,)
-            self.tokenizer.pad_token = self.tokenizer.eos_token
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            self.model_name,
+            model_max_length=1919,
+            padding_side="left",
+            use_fast=False,)
+        self.tokenizer.pad_token = self.tokenizer.eos_token
 
-            # calculate the size taken by the model in the memory
-            self.total_mem_size = 0
-            parameters = list(self.model.parameters())
-            for param in tqdm(parameters):
-                self.total_mem_size += param.numel() * param.element_size()
-            self.total_mem_size = self.total_mem_size / (1024 ** 3)
-
-        self.data_object = Dataset(
-                self.dataset_path, total_count_override=max_examples)
-        self.qsl = lg.ConstructQSL(self.data_object.count, self.data_object.perf_count,
-                                   self.data_object.LoadSamplesToRam, self.data_object.UnloadSamplesFromRam)
+        # calculate the size taken by the model in the memory
+        self.total_mem_size = 0
+        parameters = list(self.model.parameters())
+        for param in tqdm(parameters):
+            self.total_mem_size += param.numel() * param.element_size()
+        self.total_mem_size = self.total_mem_size / (1024 ** 3)
 
         self.sut = lg.ConstructSUT(self.issue_queries, self.flush_queries)
+
+        if not self.network == "lon":
+            from GPTJ_QSL import get_GPTJ_QSL
+            self.qsl = get_GPTJ_QSL(
+                dataset_path=self.dataset_path,
+                max_examples=self.max_examples
+            )
 
     def issue_queries(self, query_samples):
         print("Number of Samples in query_samples : ", len(query_samples))
@@ -104,13 +104,13 @@ class SUT_base():
 
         for i in tqdm(range(len(query_samples))):
             index = query_samples[i].index
-            query = self.data_object.sources[index]
+            query = self.qsl.data_object.sources[index]
             self.inference_call(query, query_samples[i].id)
 
     def inference_call(self, query, query_id=None):
         ''' Common for all scenarios '''
         torch_device_type = 'cuda' if self.use_gpu else 'cpu'
-        input_ids_tensor, input_masks_tensor = self.data_object.encode_input_from_network(query)
+        input_ids_tensor, input_masks_tensor = self.qsl.data_object.encode_input_from_network(query)
         input_ids_tensor = input_ids_tensor.to(torch_device_type)
         input_masks_tensor = input_masks_tensor.to(torch_device_type)           
 
@@ -171,8 +171,8 @@ class SUT_Server(SUT_base):
     def issue_queries(self, query_samples):
 
         index = query_samples[0].index
-        input_ids_tensor = self.data_object.source_encoded_input_ids[index]
-        input_masks_tensor = self.data_object.source_encoded_attn_masks[index]
+        input_ids_tensor = self.qsl.data_object.source_encoded_input_ids[index]
+        input_masks_tensor = self.qsl.data_object.source_encoded_attn_masks[index]
 
         if self.use_gpu:
             input_ids_tensor = input_ids_tensor.to(self.device)
@@ -199,8 +199,8 @@ class SUT_SingleStream(SUT_base):
     def issue_queries(self, query_samples):
 
         index = query_samples[0].index
-        input_ids_tensor = self.data_object.source_encoded_input_ids[index]
-        input_masks_tensor = self.data_object.source_encoded_attn_masks[index]
+        input_ids_tensor = self.qsl.data_object.source_encoded_input_ids[index]
+        input_masks_tensor = self.qsl.data_object.source_encoded_attn_masks[index]
 
         if self.use_gpu:
             input_ids_tensor = input_ids_tensor.to(self.device)
