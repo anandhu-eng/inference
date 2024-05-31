@@ -89,11 +89,16 @@ class SUT_base():
         self.sut = lg.ConstructSUT(self.issue_queries, self.flush_queries)
 
         if not self.network == "lon":
-            from GPTJ_QSL import get_GPTJ_QSL
-            self.qsl = get_GPTJ_QSL(
-                dataset_path=self.dataset_path,
-                max_examples=self.max_examples
-            )
+            # When not run in network mode, QSL is needed to prepare dataset for GPT-J
+            if self.network == None:
+                from GPTJ_QSL import get_GPTJ_QSL
+                self.qsl = get_GPTJ_QSL(
+                    dataset_path=self.dataset_path,
+                    max_examples=self.max_examples
+                )
+            # Encoder is used to tokenise the input
+            from input_encoder import get_input_encoder
+            self.encoder = get_input_encoder(self.model_name)
 
     def issue_queries(self, query_samples):
         print("Number of Samples in query_samples : ", len(query_samples))
@@ -110,7 +115,7 @@ class SUT_base():
     def inference_call(self, query, query_id=None):
         ''' Common for all scenarios '''
         torch_device_type = 'cuda' if self.use_gpu else 'cpu'
-        input_ids_tensor, input_masks_tensor = self.qsl.data_object.encode_input_from_network(query)
+        input_ids_tensor, input_masks_tensor = self.encoder.encode_input_from_network(query)
         input_ids_tensor = input_ids_tensor.to(torch_device_type)
         input_masks_tensor = input_masks_tensor.to(torch_device_type)           
 
