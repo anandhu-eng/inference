@@ -100,7 +100,6 @@ class SUT_base():
             from input_encoder import get_input_encoder
             self.encoder = get_input_encoder(self.model_name)
 
-
     def issue_queries(self, query_samples):
         print("Number of Samples in query_samples : ", len(query_samples))
 
