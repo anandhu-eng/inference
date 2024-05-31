@@ -61,7 +61,14 @@ class GPTJ_QDL:
             print("Executing Offline scenario!")
             for i in range(len(query_samples)):
                 index = query_samples[i].index
-                query = self.qsl.data_object.sources[index]
+                input_ids_tensor = self.qsl.data_object.source_encoded_input_ids[index]
+                input_masks_tensor = self.qsl.data_object.source_encoded_attn_masks[index]
+                text = self.qsl.data_object.sources[index]
+                query = {
+                    "input_text": text,
+                    "input_ids_tensor": input_ids_tensor.tolist(),
+                    "input_masks_tensor": input_masks_tensor.tolist()
+                }
                 n = threading.active_count()
                 while n >= max_num_threads:
                     sleep(0.0001)
@@ -74,7 +81,15 @@ class GPTJ_QDL:
             print("Executing SingleStream scenario!")
             for i in range(len(query_samples)):
                 index = query_samples[i].index
-                query = self.qsl.data_object.sources[index]
+                # get the masks and ids
+                input_ids_tensor = self.qsl.data_object.source_encoded_input_ids[index]
+                input_masks_tensor = self.qsl.data_object.source_encoded_attn_masks[index]
+                text = self.qsl.data_object.sources[index]
+                query = {
+                    "input_text": text,
+                    "input_ids_tensor": input_ids_tensor.tolist(),
+                    "input_masks_tensor": input_masks_tensor.tolist()
+                }
                 self.client_predict_worker(query, query_samples[i].id)
     
     def get_sut_id_round_robin(self):
@@ -94,7 +109,7 @@ class GPTJ_QDL:
         print(f"Latency = {endTime-startTime}")
         output = response.json()['result']
         response_text = output["response_text"]
-        print(query)
+        print(query["input_text"])
         print(response_text)
         output_batch = np.array(output["pred_output_batch"]).astype(np.int32)
         response_array = array.array("B", output_batch.tobytes())
