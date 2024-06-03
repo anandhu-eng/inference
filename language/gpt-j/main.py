@@ -74,7 +74,7 @@ def main():
             dataset_path=args.dataset_path,
             max_examples=args.max_examples
         )
-    elif args.network != "sut":
+    if args.network != "sut":
         # Gets the Query Data Loader and Query Sample Loader
         # Responsible for loading(Query Sample Loader) and sending samples over the network(Query Data Loader) to the server
         qsl = get_GPTJ_QSL(
