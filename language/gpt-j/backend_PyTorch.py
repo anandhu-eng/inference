@@ -144,6 +144,8 @@ class SUT_base():
 
             output_batch_truncated = torch.stack(output_batch_truncated)
 
+            if 
+
             pred_output_batch = output_batch_truncated.cpu().numpy()
 
             decoded_outputs = [self.tokenizer.decode(output, skip_special_tokens=True) for output in pred_output_batch]
@@ -211,18 +213,18 @@ class SUT_SingleStream(SUT_base):
         index = query_samples[0].index
         input_ids_tensor = self.qsl.data_object.source_encoded_input_ids[index]
         input_masks_tensor = self.qsl.data_object.source_encoded_attn_masks[index]
+        query = {
+            "input_ids_tensor": input_ids_tensor.tolist(),
+            "input_masks_tensor": input_masks_tensor.tolist()
+        }
 
         if self.use_gpu:
             input_ids_tensor = input_ids_tensor.to(self.device)
             input_masks_tensor = input_masks_tensor.to(self.device)
 
-        pred_output_batch = self.inference_call(
-            input_ids_tensor, input_masks_tensor).cpu().numpy()
+        self.inference_call(
+            query, query_samples[0].id).cpu().numpy()
 
-        response_array = array.array("B", pred_output_batch.tobytes())
-        bi = response_array.buffer_info()
-        responses = [lg.QuerySampleResponse(query_samples[0].id, bi[0], bi[1])]
-        lg.QuerySamplesComplete(responses)
         self.total_samples_done += 1
         if self.total_samples_done % 5 == 0:
             print("Completed : ", self.total_samples_done)
