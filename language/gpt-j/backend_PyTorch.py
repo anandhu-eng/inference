@@ -144,8 +144,6 @@ class SUT_base():
 
             output_batch_truncated = torch.stack(output_batch_truncated)
 
-            if 
-
             pred_output_batch = output_batch_truncated.cpu().numpy()
 
             decoded_outputs = [self.tokenizer.decode(output, skip_special_tokens=True) for output in pred_output_batch]
