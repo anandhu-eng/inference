@@ -28,6 +28,7 @@ import torch
 import transformers
 from transformers import BertConfig, BertForQuestionAnswering
 from squad_QSL import get_squad_QSL
+from tqdm import tqdm
 
 class BERT_PyTorch_SUT():
     def __init__(self, args):
@@ -66,7 +67,7 @@ class BERT_PyTorch_SUT():
         self.qsl = get_squad_QSL(args.max_examples)
 
     def issue_queries(self, query_samples):
-        for i in range(len(query_samples)):
+        for i in tqdm(range(len(query_samples))):
             eval_features = self.qsl.get_features(query_samples[i].index)
             self.process_sample(eval_features, query_samples[i].id)
 
