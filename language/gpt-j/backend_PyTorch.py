@@ -139,7 +139,7 @@ class SUT_base():
 
             output_batch_truncated = torch.stack(output_batch_truncated)
             
-            if self.scenario == "SingleStream" and self.network == None:
+            if ((self.scenario == "SingleStream" or self.scenario == "Server") and self.network == None):
                 return output_batch_truncated
 
             pred_output_batch = output_batch_truncated.cpu().numpy()
@@ -172,31 +172,28 @@ class SUT_Server(SUT_base):
     def __init__(self, model_path, dtype, dataset_path, scenario, max_examples, use_gpu, network, qsl):
 
         SUT_base.__init__(self, model_path, dtype, dataset_path, scenario, max_examples, use_gpu, network, qsl)
-        self.total_samples_done = 0
         self.sut = lg.ConstructSUT(self.issue_queries, self.flush_queries)
-        print("SUT Server")
+        self.total_samples_done = 0
 
     def issue_queries(self, query_samples):
-
+        
         index = query_samples[0].index
         input_ids_tensor = self.qsl.data_object.source_encoded_input_ids[index]
         input_masks_tensor = self.qsl.data_object.source_encoded_attn_masks[index]
-
-        if self.use_gpu:
-            input_ids_tensor = input_ids_tensor.to(self.device)
-            input_masks_tensor = input_masks_tensor.to(self.device)
-
-        pred_output_batch = self.inference_call(
-            input_ids_tensor, input_masks_tensor).cpu().numpy()
-
+        text = self.qsl.data_object.sources[index]
+        query = {
+            "input_ids_tensor": input_ids_tensor.tolist(),
+            "input_masks_tensor": input_masks_tensor.tolist()
+        }
+        pred_output_batch = self.inference_call(query, query_samples[0].id).cpu().numpy()
         response_array = array.array("B", pred_output_batch.tobytes())
         bi = response_array.buffer_info()
         responses = [lg.QuerySampleResponse(query_samples[0].id, bi[0], bi[1])]
         lg.QuerySamplesComplete(responses)
+
         self.total_samples_done += 1
         if self.total_samples_done % 5 == 0:
             print("Completed : ", self.total_samples_done)
-
 
 class SUT_SingleStream(SUT_base):
     def __init__(self, model_path, dtype, dataset_path, scenario, max_examples, use_gpu, network, qsl):
@@ -213,10 +210,6 @@ class SUT_SingleStream(SUT_base):
             "input_ids_tensor": input_ids_tensor.tolist(),
             "input_masks_tensor": input_masks_tensor.tolist()
         }
-
-        if self.use_gpu:
-            input_ids_tensor = input_ids_tensor.to(self.device)
-            input_masks_tensor = input_masks_tensor.to(self.device)
 
         pred_output_batch = self.inference_call(
             query, query_samples[0].id).cpu().numpy()

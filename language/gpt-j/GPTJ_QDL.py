@@ -75,6 +75,20 @@ class GPTJ_QDL:
                     n = threading.active_count()
                 threading.Thread(target=self.client_predict_worker,
                              args=[query, query_samples[i].id]).start()
+        if self.scenario == "Server":
+            # Client sends request to server
+            # Number of samples in a query can vary based on Poisson distribution
+            for i in range(len(query_samples)):
+                index = query_samples[i].index
+                input_ids_tensor = self.qsl.data_object.source_encoded_input_ids[index]
+                input_masks_tensor = self.qsl.data_object.source_encoded_attn_masks[index]
+                text = self.qsl.data_object.sources[index]
+                query = {
+                    "input_text": text,
+                    "input_ids_tensor": input_ids_tensor.tolist(),
+                    "input_masks_tensor": input_masks_tensor.tolist()
+                }
+                self.client_predict_worker(query, query_samples[i].id)
 
     def get_sut_id_round_robin(self):
         """Get the SUT id in round robin."""

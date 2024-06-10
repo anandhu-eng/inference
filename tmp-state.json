@@ -27,7 +27,7 @@
     "host_storage_type": "SSD",
     "hw_notes": "",
     "number_of_nodes": "1",
-    "operating_system": "Ubuntu 24.04 (linux-6.8.0-31-generic-glibc2.39)",
+    "operating_system": "Ubuntu 24.04 (linux-6.8.0-35-generic-glibc2.39)",
     "other_software_stack": "Python: 3.12.3, GCC-13.2.0",
     "status": "available",
     "submitter": "CTuning",
@@ -37,7 +37,7 @@
     "system_type_detail": "edge server"
   },
   "CM_SUT_CONFIG": {
-    "intel_spr_i9-reference-gpu-pytorch-v2.3.0-default_config": {
+    "intel_spr_i9-reference-gpu-pytorch-v2.3.0-network_sut": {
       "3d-unet-99": {
         "Offline": {
           "target_qps": 1.0
@@ -62,7 +62,7 @@
       },
       "bert-99": {
         "Offline": {
-          "target_qps": "91.7037"
+          "target_qps": 1.0
         },
         "Server": {
           "target_qps": 1.0
@@ -92,10 +92,7 @@
       },
       "gptj-99": {
         "Offline": {
-          "target_qps": "0.672856"
-        },
-        "SingleStream": {
-          "target_latency": "2092.7362860000003"
+          "target_qps": 1.0
         }
       },
       "llama2-70b-99": {
@@ -161,9 +158,9 @@
       }
     }
   },
-  "CM_SUT_CONFIG_NAME": "intel_spr_i9-reference-gpu-pytorch-v2.3.0-default_config",
+  "CM_SUT_CONFIG_NAME": "intel_spr_i9-reference-gpu-pytorch-v2.3.0-network_sut",
   "CM_SUT_CONFIG_PATH": {
-    "intel_spr_i9-reference-gpu-pytorch-v2.3.0-default_config": "/home/anandhu/CM/repos/local/cache/baf26f8879624386/intel_spr_i9/reference-implementation/gpu-device/pytorch-framework/framework-version-v2.3.0/default_config-config.yaml"
+    "intel_spr_i9-reference-gpu-pytorch-v2.3.0-network_sut": "/home/anandhu/CM/repos/local/cache/baf26f8879624386/intel_spr_i9/reference-implementation/gpu-device/pytorch-framework/framework-version-v2.3.0/network_sut-config.yaml"
   },
   "CM_SUT_META": {
     "accelerator_frequency": "2520.000000 MHz",
@@ -193,7 +190,7 @@
     "host_storage_type": "SSD",
     "hw_notes": "",
     "number_of_nodes": "1",
-    "operating_system": "Ubuntu 24.04 (linux-6.8.0-31-generic-glibc2.39)",
+    "operating_system": "Ubuntu 24.04 (linux-6.8.0-35-generic-glibc2.39)",
     "other_software_stack": "Python: 3.12.3, GCC-13.2.0",
     "status": "available",
     "submitter": "CTuning",
@@ -203,7 +200,7 @@
     "system_type_detail": "edge server"
   },
   "RUN": {
-    "SingleStream": {}
+    "Offline": {}
   },
   "cm_cuda_device_prop": {
     "CUDA driver version": "12.4",
@@ -227,9 +224,9 @@
   },
   "docker": {},
   "mlperf-inference-implementation": {
-    "script_id": "app-mlperf-inference,d775cac873ee4231:reference,gptj-99,pytorch,cuda,valid,bfloat16,singlestream"
+    "script_id": "app-mlperf-inference,d775cac873ee4231:reference,gptj-99,pytorch,cuda,test,bfloat16,offline"
   },
-  "mlperf_inference_run_cmd": "cm run script --tags=run-mlperf,inference,_performance-only --model=gptj-99 --backend=pytorch --device=cuda --precision=bfloat16 --rerun --quiet --env.GPTJ_BEAM_SIZE=2 --scenario=SingleStream --adr.compiler.tags=gcc --adr.mlperf-implementation.tags=_repo.https://github.com/anandhu-eng/inference/,_branch.GPT-J --adr.cuda.version=12.4.1 --execution-mode=valid",
-  "os_uname_all": "Linux intel-spr-i9 6.8.0-31-generic #31-Ubuntu SMP PREEMPT_DYNAMIC Sat Apr 20 00:40:06 UTC 2024 x86_64 x86_64 x86_64 GNU/Linux",
+  "mlperf_inference_run_cmd": "cm run script --tags=run-mlperf,inference,_performance-only --model=gptj-99 --backend=pytorch --device=cuda --beam_size=1 --precision=bfloat16 --rerun --quiet --env.GPTJ_BEAM_SIZE=2 --adr.compiler.tags=gcc --adr.mlperf-implementation.tags=_repo.https://github.com/anandhu-eng/inference/,_branch.GPT-J --adr.cuda.version=12.4.1 --network=sut",
+  "os_uname_all": "Linux intel-spr-i9 6.8.0-35-generic #35-Ubuntu SMP PREEMPT_DYNAMIC Mon May 20 15:51:52 UTC 2024 x86_64 x86_64 x86_64 GNU/Linux",
   "os_uname_machine": "x86_64"
 }
