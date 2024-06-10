@@ -50,14 +50,14 @@ class SUT_base():
                 offload_folder="offload" if not self.use_gpu else None,    # specify offload folder when using devices with less RAM
                 offload_state_dict = True if not self.use_gpu else False   # to have some shards of the model to be on the disk
             )
-        except ValueError as e:
+        except ValueError as e: 
             if "disk_offload" in str(e):
                 print("Offloading the whole model to disk...")
                 self.model = AutoModelForCausalLM.from_pretrained(
                     self.model_path,
                     low_cpu_mem_usage=True if not self.use_gpu else False,
                     torch_dtype=self.amp_dtype,
-                    offload_state_dict = True if not self.use_gpu else False   # to have some shards of the model to be on the disk
+                    offload_state_dict = True if not self.use_gpu else False
                 ).cpu()
                 disk_offload(model=self.model, offload_dir="offload")
 
@@ -139,6 +139,7 @@ class SUT_base():
 
             output_batch_truncated = torch.stack(output_batch_truncated)
             
+            # Loadgen monitors the reponse in corresponding functions
             if ((self.scenario == "SingleStream" or self.scenario == "Server") and self.network == None):
                 return output_batch_truncated
 
@@ -147,6 +148,7 @@ class SUT_base():
             decoded_outputs = [self.tokenizer.decode(output, skip_special_tokens=True) for output in pred_output_batch]
             response_text = decoded_outputs[0]
 
+            # Loadgen monitors the response in GPT_QDL
             if self.network == "sut":
                 return {"pred_output_batch":pred_output_batch.tolist(), "response_text": response_text}
 
