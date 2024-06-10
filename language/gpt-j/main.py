@@ -74,6 +74,32 @@ def main():
                 scenario=args.scenario,
                 qsl = qsl
             )
+        settings = lg.TestSettings()
+        settings.scenario = scenario_map[args.scenario]
+        # Need to update the conf
+        settings.FromConfig(args.mlperf_conf, "gptj", args.scenario)
+        settings.FromConfig(args.user_conf, "gptj", args.scenario)
+
+        # Chosing test mode Accutacy/Performance
+        if args.accuracy:
+            settings.mode = lg.TestMode.AccuracyOnly
+        else:
+            settings.mode = lg.TestMode.PerformanceOnly
+
+        # Set log path
+        log_path = os.environ.get("LOG_PATH")
+        if not log_path:
+            log_path = "build/logs"
+        if not os.path.exists(log_path):
+            os.makedirs(log_path)
+
+        log_output_settings = lg.LogOutputSettings()
+        log_output_settings.outdir = log_path
+        log_output_settings.copy_summary_to_stdout = True
+        log_settings = lg.LogSettings()
+        log_settings.log_output = log_output_settings
+        log_settings.enable_trace = True
+
     if args.network != "lon":
         # Gets SUT.
         # SUT only initialised when network is either None or is SUT as it is not needed in case of client(LON).
@@ -89,33 +115,10 @@ def main():
             qsl=qsl # If args.network is None, then only QSL get passed to the SUT, else it will be None
         )
     
-    settings = lg.TestSettings()
-    settings.scenario = scenario_map[args.scenario]
-    # Need to update the conf
-    settings.FromConfig(args.mlperf_conf, "gptj", args.scenario)
-    settings.FromConfig(args.user_conf, "gptj", args.scenario)
+    if args.network == "lon" and args.scenario == "SingleStream":
+        print("Single stream scenario in Loadgen Over the Network is not supported!")
 
-    # Chosing test mode Accutacy/Performance
-    if args.accuracy:
-        settings.mode = lg.TestMode.AccuracyOnly
-    else:
-        settings.mode = lg.TestMode.PerformanceOnly
-
-    # Set log path
-    log_path = os.environ.get("LOG_PATH")
-    if not log_path:
-        log_path = "build/logs"
-    if not os.path.exists(log_path):
-        os.makedirs(log_path)
-
-    log_output_settings = lg.LogOutputSettings()
-    log_output_settings.outdir = log_path
-    log_output_settings.copy_summary_to_stdout = True
-    log_settings = lg.LogSettings()
-    log_settings.log_output = log_output_settings
-    log_settings.enable_trace = True
-
-    if args.network == "lon":
+    elif args.network == "lon":
         lg.StartTestWithLogSettings(qdl.qdl, qsl.qsl, settings, log_settings, args.audit_conf)
 
     elif args.network == "sut":
