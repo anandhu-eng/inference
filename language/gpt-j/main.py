@@ -60,7 +60,20 @@ scenario_map = {
 
 def main():
     args = get_args()
-
+    qsl = None
+    if args.network != "sut":
+        # Gets the Query Data Loader and Query Sample Loader
+        # Responsible for loading(Query Sample Loader) and sending samples over the network(Query Data Loader) to the server
+        qsl = get_GPTJ_QSL(
+            dataset_path=args.dataset_path,
+            max_examples=args.max_examples
+        )
+        if args.network == "lon":
+            qdl = GPTJ_QDL(
+                sut_server_addr=args.sut_server,
+                scenario=args.scenario,
+                qsl = qsl
+            )
     if args.network != "lon":
         # Gets SUT.
         # SUT only initialised when network is either None or is SUT as it is not needed in case of client(LON).
@@ -72,22 +85,10 @@ def main():
             use_gpu=args.gpu,
             network=args.network,
             dataset_path=args.dataset_path,
-            max_examples=args.max_examples
+            max_examples=args.max_examples,
+            qsl=qsl # If args.network is None, then only QSL get passed to the SUT, else it will be None
         )
-    if args.network != "sut":
-        # Gets the Query Data Loader and Query Sample Loader
-        # Responsible for loading(Query Sample Loader) and sending samples over the network(Query Data Loader) to the server
-        qsl = get_GPTJ_QSL(
-            dataset_path=args.dataset_path,
-            max_examples=args.max_examples
-        )
-        qdl = GPTJ_QDL(
-            sut_server_addr=args.sut_server, 
-            scenario=args.scenario,
-            qsl = qsl
-        )
-        
-
+    
     settings = lg.TestSettings()
     settings.scenario = scenario_map[args.scenario]
     # Need to update the conf

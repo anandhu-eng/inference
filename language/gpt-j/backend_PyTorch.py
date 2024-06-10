@@ -19,7 +19,7 @@ gen_kwargs = {
 
 
 class SUT_base():
-    def __init__(self, model_path, dtype, dataset_path, scenario, max_examples, use_gpu=False, network=None):
+    def __init__(self, model_path, dtype, dataset_path, scenario, max_examples, use_gpu=False, network=None, qsl=None):
         self.network = network
         self.model_name = "EleutherAI/gpt-j-6B"
         self.model_path = model_path
@@ -27,6 +27,7 @@ class SUT_base():
         self.dataset_path = dataset_path
         self.max_examples = max_examples
         self.scenario = scenario
+        self.qsl = qsl
         print("Loading PyTorch model...")
             
         # dtype
@@ -89,13 +90,6 @@ class SUT_base():
 
         self.sut = lg.ConstructSUT(self.issue_queries, self.flush_queries)
 
-        if self.network == None:
-            from GPTJ_QSL import get_GPTJ_QSL
-            self.qsl = get_GPTJ_QSL(
-                dataset_path=self.dataset_path,
-                max_examples=self.max_examples
-            )
-
     def issue_queries(self, query_samples):
         print("Number of Samples in query_samples : ", len(query_samples))
 
@@ -145,7 +139,7 @@ class SUT_base():
 
             output_batch_truncated = torch.stack(output_batch_truncated)
             
-            if self.scenario == "SingleStream":
+            if self.scenario == "SingleStream" and self.network == None:
                 return output_batch_truncated
 
             pred_output_batch = output_batch_truncated.cpu().numpy()
@@ -169,15 +163,15 @@ class SUT_base():
 
 
 class SUT_Offline(SUT_base):
-    def __init__(self, model_path, dtype, dataset_path, scenario, max_examples, use_gpu, network):
-        SUT_base.__init__(self, model_path, dtype, dataset_path, scenario, max_examples, use_gpu, network)
+    def __init__(self, model_path, dtype, dataset_path, scenario, max_examples, use_gpu, network, qsl):
+        SUT_base.__init__(self, model_path, dtype, dataset_path, scenario, max_examples, use_gpu, network, qsl)
     '''IssueQuery and inference methods implemented in Base class'''
 
 
 class SUT_Server(SUT_base):
-    def __init__(self, model_path, dtype, dataset_path, scenario, max_examples, use_gpu, network):
+    def __init__(self, model_path, dtype, dataset_path, scenario, max_examples, use_gpu, network, qsl):
 
-        SUT_base.__init__(self, model_path, dtype, dataset_path, scenario, max_examples, use_gpu, network)
+        SUT_base.__init__(self, model_path, dtype, dataset_path, scenario, max_examples, use_gpu, network, qsl)
         self.total_samples_done = 0
         self.sut = lg.ConstructSUT(self.issue_queries, self.flush_queries)
         print("SUT Server")
@@ -205,8 +199,8 @@ class SUT_Server(SUT_base):
 
 
 class SUT_SingleStream(SUT_base):
-    def __init__(self, model_path, dtype, dataset_path, scenario, max_examples, use_gpu, network):
-        SUT_base.__init__(self, model_path, dtype, dataset_path, scenario, max_examples, use_gpu, network)
+    def __init__(self, model_path, dtype, dataset_path, scenario, max_examples, use_gpu, network, qsl):
+        SUT_base.__init__(self, model_path, dtype, dataset_path, scenario, max_examples, use_gpu, network, qsl)
         self.sut = lg.ConstructSUT(self.issue_queries, self.flush_queries)
         self.total_samples_done = 0
 
@@ -240,10 +234,10 @@ class SUT_SingleStream(SUT_base):
 
 
 
-def get_SUT(model_path, scenario, dtype, dataset_path, max_examples, use_gpu=False, network=None):
+def get_SUT(model_path, scenario, dtype, dataset_path, max_examples, use_gpu=False, network=None, qsl=None):
     if scenario == "Offline":
-        return SUT_Offline(model_path, dtype, dataset_path, scenario, max_examples, use_gpu, network)
+        return SUT_Offline(model_path, dtype, dataset_path, scenario, max_examples, use_gpu, network, qsl)
     elif scenario == "Server":
-        return SUT_Server(model_path, dtype, dataset_path, scenario, max_examples, use_gpu, network)
+        return SUT_Server(model_path, dtype, dataset_path, scenario, max_examples, use_gpu, network, qsl)
     elif scenario == "SingleStream":
-        return SUT_SingleStream(model_path, dtype, dataset_path, scenario, max_examples, use_gpu, network)
+        return SUT_SingleStream(model_path, dtype, dataset_path, scenario, max_examples, use_gpu, network, qsl)
