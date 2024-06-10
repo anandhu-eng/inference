@@ -78,7 +78,6 @@ class GPTJ_QDL:
         if self.scenario == "Server":
             # Client sends request to server
             # Number of samples in a query can vary based on Poisson distribution
-            print(len(query_samples))
             index = query_samples[0].index
             input_ids_tensor = self.qsl.data_object.source_encoded_input_ids[index]
             input_masks_tensor = self.qsl.data_object.source_encoded_attn_masks[index]
