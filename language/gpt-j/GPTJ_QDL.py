@@ -77,7 +77,7 @@ class GPTJ_QDL:
                              args=[query, query_samples[i].id]).start()
         if self.scenario == "Server":
             # Client sends request to server
-            # Number of samples in a query can vary based on Poisson distribution
+            # Number of samples can vary based on Poisson distribution
             index = query_samples[0].index
             input_ids_tensor = self.qsl.data_object.source_encoded_input_ids[index]
             input_masks_tensor = self.qsl.data_object.source_encoded_attn_masks[index]
@@ -100,14 +100,20 @@ class GPTJ_QDL:
         """Serialize the query, send it to the SUT in round robin, and return the deserialized response."""
         url = '{}/predict/'.format(self.sut_server_addr[self.get_sut_id_round_robin()])
         responses = []
+        # Start the timer
         startTime = time.time()
+        # Sending the request to the server through POST method
+        # Upon recieving the response, it is stored in response variable
         response = requests.post(url, json={'query': query})
+        # Measure the response time
         endTime = time.time()
+        # calculate the latency
         print(f"Latency = {endTime-startTime}")
         output = response.json()['result']
         response_text = output["response_text"]
         print(query["input_text"])
         print(response_text)
+        
         output_batch = np.array(output["pred_output_batch"]).astype(np.int32)
         response_array = array.array("B", output_batch.tobytes())
         bi = response_array.buffer_info()
