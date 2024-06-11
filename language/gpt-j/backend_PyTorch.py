@@ -81,13 +81,14 @@ class SUT_base():
             use_fast=False,)
         self.tokenizer.pad_token = self.tokenizer.eos_token
 
-        # calculate the size taken by the model in the memory
+        # calculate the memory size taken by the model 
         self.total_mem_size = 0
         parameters = list(self.model.parameters())
         for param in tqdm(parameters):
             self.total_mem_size += param.numel() * param.element_size()
         self.total_mem_size = self.total_mem_size / (1024 ** 3)
 
+        # construct SUT
         self.sut = lg.ConstructSUT(self.issue_queries, self.flush_queries)
 
     def issue_queries(self, query_samples):
@@ -97,6 +98,8 @@ class SUT_base():
         list_prompts_tokens = []
         list_prompts_attn_masks = []
 
+        # Pass each query to inference_call function
+        # Activates only when scenario is Offline and network mode is None
         for i in tqdm(range(len(query_samples))):
             index = query_samples[i].index
             input_ids_tensor = self.qsl.data_object.source_encoded_input_ids[index]
@@ -116,6 +119,7 @@ class SUT_base():
         input_ids_tensor = torch.tensor(query["input_ids_tensor"])
         input_masks_tensor = torch.tensor(query["input_masks_tensor"])
 
+        # Moves the tensor to CPU or GPU as per argument passed by user
         input_ids_tensor = input_ids_tensor.to(torch_device_type)
         input_masks_tensor = input_masks_tensor.to(torch_device_type)               
 
@@ -178,7 +182,7 @@ class SUT_Server(SUT_base):
         self.total_samples_done = 0
 
     def issue_queries(self, query_samples):
-        
+        # The issue queries function is called multiple times by the loadgen as per Poisson Distribution
         index = query_samples[0].index
         input_ids_tensor = self.qsl.data_object.source_encoded_input_ids[index]
         input_masks_tensor = self.qsl.data_object.source_encoded_attn_masks[index]
@@ -204,7 +208,7 @@ class SUT_SingleStream(SUT_base):
         self.total_samples_done = 0
 
     def issue_queries(self, query_samples):
-
+        # This function is called by the loadgen after completing the previous query
         index = query_samples[0].index
         input_ids_tensor = self.qsl.data_object.source_encoded_input_ids[index]
         input_masks_tensor = self.qsl.data_object.source_encoded_attn_masks[index]
