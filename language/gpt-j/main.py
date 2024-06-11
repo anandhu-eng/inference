@@ -44,12 +44,12 @@ def get_args():
     return args
 
 # Function to get the amount of temporary cache generated when running the GPT-J model
-# Varies with the beam size set(6GB x Beam size)
+# Varies with the beam size set(Estimate: 6GB x Beam size)
 def get_temp_cache():
     beam_size = int(os.environ.get("GPTJ_BEAM_SIZE", "4"))
     return 6 * beam_size
 
-
+# Map the loadgen scenario as per the option given by the user
 scenario_map = {
     "SingleStream": lg.TestScenario.SingleStream,
     "Offline": lg.TestScenario.Offline,
@@ -57,7 +57,7 @@ scenario_map = {
     "MultiStream": lg.TestScenario.MultiStream
 }
 
-
+# Main function triggered when the script is run
 def main():
     args = get_args()
     qsl = None
@@ -74,6 +74,8 @@ def main():
                 scenario=args.scenario,
                 qsl = qsl
             )
+
+        # Initiates and loads loadgen test settings and log path
         settings = lg.TestSettings()
         settings.scenario = scenario_map[args.scenario]
         # Need to update the conf
@@ -116,11 +118,13 @@ def main():
         )
     
     if args.network == "lon" and args.scenario == "SingleStream":
-        print("Single stream scenario in Loadgen Over the Network is not supported!")
+        print("ERROR: Single stream scenario in Loadgen Over the Network is not supported!")
 
+    # If network option is LON, QDL is loaded and request is served to SUT based on the scenario given by user(Offline or SingleStream)
     elif args.network == "lon":
         lg.StartTestWithLogSettings(qdl.qdl, qsl.qsl, settings, log_settings, args.audit_conf)
 
+    # If network option is SUT, a flask server is initiated, request is processed and output is being sent back to LON client
     elif args.network == "sut":
         temp_cache = get_temp_cache()
         from network_SUT import app, node, set_backend, set_semaphore
@@ -139,13 +143,15 @@ def main():
             free_mem = get_cpu_memory_info()
         lockVar = math.floor((free_mem - model_mem_size)/temp_cache)
         node = args.node
+        # Semaphore is set inorder to create multiple instances upon request incomming
         set_semaphore(lockVar)
         print(f"Set the semaphore lock variable to {lockVar}")
-
+        # Pass SUT as the backend
         set_backend(sut)
         app.run(debug=False, port=args.port, host="0.0.0.0")
 
     else:
+        # Test not run in Loadgen Over the Network
         print("Running LoadGen test...")
         lg.StartTestWithLogSettings(sut.sut, qsl.qsl, settings, log_settings, args.audit_conf)
 
