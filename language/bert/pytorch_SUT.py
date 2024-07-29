@@ -28,6 +28,9 @@ import torch
 import transformers
 from transformers import BertConfig, BertForQuestionAnswering
 from squad_QSL import get_squad_QSL
+from tqdm import tqdm
+import threading
+from time import sleep
 
 class BERT_PyTorch_SUT():
     def __init__(self, args):
@@ -66,9 +69,15 @@ class BERT_PyTorch_SUT():
         self.qsl = get_squad_QSL(args.max_examples)
 
     def issue_queries(self, query_samples):
-        for i in range(len(query_samples)):
+        max_num_threads = int(os.environ.get('CM_MAX_NUM_THREADS', os.cpu_count()))
+        for i in tqdm(range(len(query_samples))):
+            n = threading.active_count()
+            while n >= max_num_threads:
+                    sleep(0.0001)
+                    n = threading.active_count()
             eval_features = self.qsl.get_features(query_samples[i].index)
-            self.process_sample(eval_features, query_samples[i].id)
+            threading.Thread(target=self.process_sample,
+                             args=[eval_features, query_samples[i].id]).start()
 
     def process_sample(self, sample_input, query_id = None):
 
