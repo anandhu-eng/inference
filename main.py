@@ -316,9 +316,15 @@ def define_env(env):
              pre_space  = pre_space + " "
         pre_space += " "
         #pre_space = "                "
+        info += f"\n{pre_space}!!! tip\n\n"
+        info+= f"{pre_space}    - Batch size could be adjusted using `--batch_size=#`, where `#` is the desired batch size.\n\n"
+        info+= f"{pre_space}    - If batch size is not specified, CM scans for accelerator name and sets a predetermined batch size for known accelerators. For example, the batch size for BERT on an RTX 4090 can be found [here](https://github.com/anandhu-eng/cm4mlops/blob/54af88fb64d898758e2f0edfd79bb6e5aed9c38a/script/app-mlperf-inference-nvidia/_cm.yaml#L1381).\n\n"
+        info+= f"{pre_space}    - If batch size is not specifieid and the accelerator name is unknown, CM sets default value to 1.\n\n"
         if implementation == "nvidia":
-            info += f"\n{pre_space}!!! tip\n\n"
-            info+= f"{pre_space}    If ran with `--all_models=yes`, all the benchmark models of NVIDIA implementation could be run within the same container.\n\n"
+            info+= f"{pre_space}    - when run with `--all_models=yes`, all the benchmark models of NVIDIA implementation can be executed within the same container.\n\n"
+        if "llama2" in model.lower():
+            info+= f"{pre_space}    - The dataset for NVIDIA's implementation of Llama2 is not publicly available. The user must fill [this](https://docs.google.com/forms/d/e/1FAIpQLSc_8VIvRmXM3I8KQaYnKf7gy27Z63BBoI_I1u02f4lw6rBp3g/viewform?pli=1&fbzx=-8842630989397184967) form and be verified as a MLCommons member to access the dataset.\n\n"
+            info+= f"{pre_space}    - The path to the downloaded pickle file should be placed in tag `nvidia_llama2_dataset_file_path`.\n\n"
         return info
 
     def get_readme_suffix(spaces, model, implementation):
@@ -383,6 +389,7 @@ def define_env(env):
                 elif implementation == "neuralmagic":
                     docker_cmd_suffix += f" \\\n{pre_space} --api_server=http://localhost:8000"
                     docker_cmd_suffix += f" \\\n{pre_space} --vllm_model_name=nm-testing/Llama-2-70b-chat-hf-FP8"
+                    docker_cmd_suffix += f" \\\n{pre_space} --adr.mlperf-implementation.tags=_repo.https://github.com/neuralmagic/inference,_branch.vllm"
             
             if "dlrm-v2" in model.lower() and implementation == "nvidia":
                 docker_cmd_suffix += f" \\\n{pre_space} --criteo_day23_raw_data_path=<PATH_TO_CRITEO_DAY23_RAW_DATA>"
@@ -415,6 +422,7 @@ def define_env(env):
                 elif implementation == "neuralmagic":
                     cmd_suffix += f" \\\n{pre_space} --api_server=http://localhost:8000"
                     cmd_suffix += f" \\\n{pre_space} --vllm_model_name=nm-testing/Llama-2-70b-chat-hf-FP8"
+                    cmd_suffix += f" \\\n{pre_space} --adr.mlperf-implementation.tags=_repo.https://github.com/neuralmagic/inference,_branch.vllm"
             
             if "dlrm-v2" in model and implementation == "nvidia":
                 cmd_suffix += f" \\\n{pre_space} --criteo_day23_raw_data_path=<PATH_TO_CRITEO_DAY23_RAW_DATA>"
