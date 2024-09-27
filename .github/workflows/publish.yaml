@@ -10,6 +10,7 @@ on:
     branches:
       - master
       - docs
+      - cm_readme_inference_update
 
 jobs:
 
