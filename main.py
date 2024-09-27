@@ -149,7 +149,7 @@ def define_env(env):
                                     # tips regarding the running of nural magic server
                                     content += f"\n{cur_space3}!!! tip\n\n"
                                     content += f"{cur_space3}    - Host and Port number of the server can be configured through `--host` and `--port` options. Otherwise, server will run on the default host `localhost` and port `8000`.\n\n"
-                                
+
                             setup_run_cmd = mlperf_inference_run_command(spaces+17, model, implementation, framework.lower(), category.lower(), "Offline", device.lower(), "test", test_query_count, True, scenarios, code_version, extra_variation_tags, extra_input_string, extra_docker_input_string)
 
                             if execution_env == "Native": # Native implementation steps through virtual environment
@@ -185,6 +185,7 @@ def define_env(env):
                         else:
                             content += f"{cur_space3} You can reuse the same environment as described for {model.split('.')[0]}.\n"
                             content += f"{cur_space3}###### Performance Estimation for Offline Scenario\n"
+
 
                             content += mlperf_inference_run_command(spaces+17, model, implementation, framework.lower(), category.lower(), "Offline", device.lower(), "test", test_query_count, True, scenarios, code_version).replace("--docker ","")
                             content += f"{cur_space3}The above command should do a test run of Offline scenario and record the estimated offline_target_qps.\n\n"
@@ -413,7 +414,7 @@ def define_env(env):
         if scenario == "Server" or (scenario == "All Scenarios" and "Server" in scenarios):
             scenario_option += f"\\\n{pre_space} --server_target_qps=<SERVER_TARGET_QPS>"
 
-        run_cmd_extra = get_run_cmd_extra(f_pre_space, model, implementation, device, scenario, scenarios)
+        run_cmd_extra = get_run_cmd_extra(f_pre_space, model, implementation, device, scenario, scenarios, True, extra_input_string)
 
         if docker:
             docker_cmd_suffix = f" \\\n{pre_space} --docker --quiet"
