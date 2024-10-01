@@ -47,7 +47,6 @@ def main():
     dataset_path = args.dataset_file
     checkpoint_path = args.checkpoint_path
     metric = evaluate.load("rouge")
-    nltk.download('punkt')
     nltk.download('punkt_tab')
 
     tokenizer = AutoTokenizer.from_pretrained(
