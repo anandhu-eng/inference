@@ -170,7 +170,7 @@ def infer_scenario_results(filter_submitter, noinfer_low_accuracy_results, confi
                             continue
 
 
-                        required_scenarios = config.get_required(model)
+                        required_scenarios = config.get_required(mlperf_model)
                         all_scenarios = set(
                             list(required_scenarios) +
                             list(config.get_optional(mlperf_model)))
