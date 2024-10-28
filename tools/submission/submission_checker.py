@@ -740,7 +740,6 @@ class Config:
         return mlperf_model
 
     def get_required(self, model):
-        model = self.get_mlperf_model(model)
         if model not in self.required:
             return None
         return set(self.required[model])
