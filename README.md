@@ -15,3 +15,5 @@
 **Case-6**: Case-2 but model_mapping.json is not present in any of the folders. The gh action will be successfull if the submission generation fails.
 
 **Case-7**: sut_info.json is not completely filled but the SUT folder name is in required format(hardware_name-implementation-device-framework-run_config)
+
+**Case-8**: system_meta.json absent in results folder
