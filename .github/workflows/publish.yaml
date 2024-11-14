@@ -8,8 +8,6 @@ on:
     types: [published]
   push:
     branches:
-      - master
-      - docs
       - patch-4
 
 jobs:
