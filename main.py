@@ -248,6 +248,8 @@ def define_env(env):
                                 content += f"{cur_space3}####### Setup a virtual environment for Python\n"
                                 content += get_venv_command(spaces + 16)
                                 content += f"{cur_space3}####### Performance Estimation for Offline Scenario\n"
+                                
+                                content += common_info
 
                                 content += common_info
 
@@ -486,8 +488,6 @@ def define_env(env):
 {pre_space}export CM_SCRIPT_EXTRA_CMD=\"--adr.python.name=mlperf\"
 {pre_space}```\n"""
 
-    # contains run command information which is common to both docker and
-    # native runs
     def get_common_info(spaces, implementation):
         info = ""
         pre_space = ""
