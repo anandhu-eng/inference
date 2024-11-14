@@ -3,7 +3,13 @@ hide:
   - toc
 ---
 
-![Submission Generation Flow](../img/submission-flow.png)
+<p align="center">
+  <img src="../img/submission-flow.png" alt="Submission Generation Flow">
+</p>
+
+<p align="center"><em>Figure: MLPerf Inference Submission Generation Flow</em></p>
+
+<!--![Submission Generation Flow](../img/submission-flow.png)-->
 
 Click [here](https://youtu.be/eI1Hoecc3ho) for the recording of the workshop - Streamline your MLPerf results using CM Framework
 
