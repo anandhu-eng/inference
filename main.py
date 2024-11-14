@@ -248,7 +248,7 @@ def define_env(env):
                                 content += f"{cur_space3}####### Setup a virtual environment for Python\n"
                                 content += get_venv_command(spaces + 16)
                                 content += f"{cur_space3}####### Performance Estimation for Offline Scenario\n"
-                                
+
                                 content += common_info
 
                                 content += common_info
