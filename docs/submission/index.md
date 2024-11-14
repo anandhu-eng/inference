@@ -3,8 +3,6 @@ hide:
   - toc
 ---
 
-## Submission Generation Flow
-
 ![Submission Generation Flow](../img/submission-flow.png)
 
 Click [here](https://youtu.be/eI1Hoecc3ho) for the recording of the workshop - Streamline your MLPerf results using CM Framework
