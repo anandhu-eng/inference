@@ -9,7 +9,7 @@ on:
   push:
     branches:
       - master
-      - patch-4
+      - docs
 
 jobs:
 
