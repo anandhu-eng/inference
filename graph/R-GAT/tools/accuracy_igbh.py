@@ -63,9 +63,7 @@ def load_labels(base_path, dataset_size, use_label_2K = True):
             torch.long)
     labels = paper_node_labels
     val_idx = torch.load(
-                os.path.join(
-                    base_path,
-                "val_idx.pt"))
+                os.path.join(base_path, dataset_size, "processed","val_idx.pt"))
     return labels, val_idx
 
 
