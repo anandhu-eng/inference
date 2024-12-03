@@ -49,7 +49,7 @@ def load_labels(base_path, dataset_size, use_label_2K = True):
     label_file = (
         "node_label_19.npy" if not use_label_2K else "node_label_2K.npy"
     )
-    paper_lbl_path = os.path.join(base_path, "paper", label_file)
+    paper_lbl_path = os.path.join(base_path, dataset_size, "processed", "paper", label_file)
 
     if dataset_size in ["large", "full"]:
         paper_node_labels = torch.from_numpy(
