@@ -35,4 +35,5 @@ if __name__ == "__main__":
         path=args.target_path,
         dataset_size=args.dataset_size,
         dataset_type=args.dataset_type,
+        confirm_download=True
     )
