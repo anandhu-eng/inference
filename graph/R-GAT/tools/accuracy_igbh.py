@@ -106,7 +106,8 @@ if __name__ == "__main__":
     results["number_correct_samples"] = good
     results["performance_sample_count"] = total
 
-
+    print(results)
+    
     with open(args.output_file, "w") as fp:
         json.dump(results, fp)
     
