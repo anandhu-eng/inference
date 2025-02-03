@@ -323,13 +323,6 @@ def main():
     else:
         dtype = torch.float32
 
-    # --count applies to accuracy mode only and can be used to limit the number of images
-    # for testing.
-    count_override = False
-    count = args.count
-    if count:
-        count_override = True
-
     # load model to backend
     model = backend.load()
 
@@ -340,6 +333,15 @@ def main():
         split='val',
         painted=True,
         cam_sync=False)
+
+    count = ds.get_item_count()
+
+    # --count applies to accuracy mode only and can be used to limit the number of images
+    # for testing.
+    count_override = False
+    count = args.count
+    if count:
+        count_override = True
 
     final_results = {
         "runtime": model.name(),
