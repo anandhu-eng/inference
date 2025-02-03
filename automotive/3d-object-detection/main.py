@@ -364,7 +364,7 @@ def main():
     #
     # make one pass over the dataset to validate accuracy
     #
-    #count = ds.get_item_count()
+    # count = ds.get_item_count()
 
     # warmup
     # TODO: Load warmup samples, the following code is a general
