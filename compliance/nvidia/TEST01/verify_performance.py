@@ -57,6 +57,9 @@ def main():
             if re.match(".*Early stopping 90th percentile estimate", line):
                 ref_score = line.split(": ", 1)[1].strip()
                 continue
+            if re.match(".*Early stopping 99.9th percentile estimate", line):
+                ref_score = line.split(": ", 1)[1].strip()
+                continue
 
         if ref_mode == "MultiStream":
             if re.match(".*Early stopping 99th percentile estimate", line):
@@ -93,6 +96,9 @@ def main():
         if test_mode == "SingleStream":
             if re.match(".*Early stopping 90th percentile estimate", line):
                 test_score = line.split(": ", 1)[1].strip()
+                continue
+            if re.match(".*Early stopping 99.9th percentile estimate", line):
+                ref_score = line.split(": ", 1)[1].strip()
                 continue
 
         if test_mode == "MultiStream":
