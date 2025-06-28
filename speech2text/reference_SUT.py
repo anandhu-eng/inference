@@ -60,7 +60,7 @@ start_cores = os.environ["START_CORES"]
 precision = torch.float32
 n_mels = 128
 sample_rate = 16000
-model_path = "openai/whisper-large-v3"
+default_model_path = "openai/whisper-large-v3"
 
 labels = [
     " ",
@@ -239,7 +239,7 @@ class Instance(mp.Process):
 
 
 class vllmSUT:
-    def __init__(self, dataset_dir,
+    def __init__(self, model_path, dataset_dir,
                  manifest_filepath, perf_count, num_workers=1, device="cpu"):
         self.model_path = model_path
         self.dataset_path = dataset_dir
