@@ -49,6 +49,7 @@ def get_args():
         help="audit config for LoadGen settings during compliance runs")
     parser.add_argument("--dataset_dir", required=True)
     parser.add_argument("--manifest", required=True)
+    parser.add_argument("--model-path", default=None)
     parser.add_argument("--perf_count", type=int, default=None)
     parser.add_argument("--log_dir", required=True)
     parser.add_argument("--num_workers", default=1, type=int)
@@ -69,11 +70,12 @@ def main():
     log_path = args.log_dir
     os.makedirs(log_path, exist_ok=True)
 
-    sut = vllmSUT(args.dataset_dir,
-                  args.manifest,
-                  args.perf_count,
-                  num_workers=args.num_workers,
-                  device="cpu")
+    sut = vllmSUT(args.model_path,
+                    args.dataset_dir,
+                    args.manifest,
+                    args.perf_count,
+                    num_workers=args.num_workers,
+                    device="cpu")
     sut.start()
 
     settings = lg.TestSettings()
