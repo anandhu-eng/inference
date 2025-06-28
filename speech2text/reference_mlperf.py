@@ -71,11 +71,11 @@ def main():
     os.makedirs(log_path, exist_ok=True)
 
     sut = vllmSUT(args.model_path,
-                    args.dataset_dir,
-                    args.manifest,
-                    args.perf_count,
-                    num_workers=args.num_workers,
-                    device="cpu")
+                  args.dataset_dir,
+                  args.manifest,
+                  args.perf_count,
+                  num_workers=args.num_workers,
+                  device="cpu")
     sut.start()
 
     settings = lg.TestSettings()
