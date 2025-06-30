@@ -158,7 +158,7 @@ class Instance(mp.Process):
         dtype = "bfloat16"
         print(f"Precision: {dtype}")
         model = LLM(
-            model=model_path,
+            model=self.model_path,
             dtype=dtype,
             skip_tokenizer_init=False,
             trust_remote_code=True,
