@@ -5,6 +5,7 @@ Please see the [MLPerf Inference benchmark paper](https://arxiv.org/abs/1911.025
 
 
 
+
 ```
 @misc{reddi2019mlperf,
     title={MLPerf Inference Benchmark},
