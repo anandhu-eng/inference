@@ -5,6 +5,91 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
+  yolo-on-gpu-with-manual-steps:
+    runs-on: [ self-hosted, mlc1, inference ]  # Points to your self-hosted runner with GPU
+    environment: sef-hosted-runner-benchmark-approval
+    concurrency:
+      group: inference-gpu-runs
+      cancel-in-progress: false  # Wait for the current run to finish, don't cancel it
+    steps:
+      - name: Number of GPUs readily available
+        run: |
+          REQUIRED_GPUS=1
+          MAX_WAIT=7200 # 2hours
+          INTERVAL=60 # Checks whether any GPUs are available every 60 seconds
+          ELAPSED=0
+          LOG_INTERVAL=300 # Log "waiting" message every 5 minutes
+
+          while true; do
+            # Get GPU IDs where memory used is less than 100MB (free)
+            FREE_GPU_IDS=$(nvidia-smi --query-gpu=index,memory.used \
+                    --format=csv,noheader,nounits | \
+                    awk -F',' '$2 < 100 {print $1}' | tr -d ' ')
+
+            FREE_GPU_COUNT=$(echo "$FREE_GPU_IDS" | grep -c '[0-9]' || echo 0)
+
+            if [ "$FREE_GPU_COUNT" -ge "$REQUIRED_GPUS" ]; then
+              # Pick only the required number of GPUs
+              SELECTED_GPUS=$(echo "$FREE_GPU_IDS" | head -n "$REQUIRED_GPUS" | tr '\n' ',' | sed 's/,$//')
+              echo "Free GPUs found: $FREE_GPU_IDS"
+              echo "Selected GPUs : $SELECTED_GPUS"
+              echo "SELECTED_GPUS=$SELECTED_GPUS" >> $GITHUB_ENV
+            break
+            fi
+
+            if [ "$ELAPSED" -ge "$MAX_WAIT" ]; then
+              echo "Timeout! Could not get $REQUIRED_GPUS free GPUs after $MAX_WAIT seconds."
+              exit 1
+            fi
+
+            # Only log every 5 minutes
+            if [ "$((ELAPSED - LAST_LOG))" -ge "$LOG_INTERVAL" ]; then
+              echo "Still waiting for GPUs... ($((ELAPSED / 60)) minutes elapsed, $FREE_GPU_COUNT free)"
+              LAST_LOG=$ELAPSED
+            fi
+
+            sleep $INTERVAL
+            ELAPSED=$((ELAPSED + INTERVAL))
+          done
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Checkout PR head branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Install dependencies, create user.conf and run the YOLO benchmark
+        run: |
+          python3 -m venv gh_action_inference
+          source gh_action_inference/bin/activate
+          echo "Installing loadgen..."
+          cd loadgen
+          pip install -e .
+          echo "Installing dependencies for YOLO benchmark..."
+          cd ../vision/classification_and_detection/yolo
+          pip install -r requirements.txt
+          echo "Creating user.conf"
+          printf '%s\n' \
+                'yolo.Offline.max_query_count = 10' \
+                'yolo.Offline.min_query_count = 10' \
+                'yolo.Offline.min_duration = 0' \
+                > user.conf
+          echo "Creationg output path"
+          mkdir output
+          echo "Starting benchmark run..."
+          CUDA_VISIBLE_DEVICES=$SELECTED_GPUS python3 yolo_loadgen.py --model /data/common/anandhu/yolo-model/yolov11-checkpoint/yolo11l.pt --dataset-path /data/common/anandhu/yolo-data/yolo-coco2017-filtered-dataset/val2017_safe/ --annotation-file /data/common/anandhu/yolo-data/yolo-coco2017-filtered-dataset/val2017_safe/annotations/instances_val2017.json --count 10 --output output --PerformanceOnly --scenario Offline
+          echo "Output log"
+          cat output/mlperf_log_summary.txt
+          
+      - name: Clean workspace
+        run: |
+          rm -rf ${{ github.workspace }}
+          mkdir -p ${{ github.workspace }}
+          
   yolo-on-gpu-with-mlc-automation:
     runs-on: [ self-hosted, mlc1, inference ]  # Points to your self-hosted runner with GPU
     environment: sef-hosted-runner-benchmark-approval
@@ -74,87 +159,3 @@ jobs:
           rm -rf ${{ github.workspace }}
           mkdir -p ${{ github.workspace }}
   
-  yolo-on-gpu-with-manual-steps:
-    runs-on: [ self-hosted, mlc1, inference ]  # Points to your self-hosted runner with GPU
-    environment: sef-hosted-runner-benchmark-approval
-    concurrency:
-      group: inference-gpu-runs
-      cancel-in-progress: false  # Wait for the current run to finish, don't cancel it
-    steps:
-      - name: Number of GPUs readily available
-        run: |
-          REQUIRED_GPUS=1
-          MAX_WAIT=7200 # 2hours
-          INTERVAL=60 # Checks whether any GPUs are available every 60 seconds
-          ELAPSED=0
-          LOG_INTERVAL=300 # Log "waiting" message every 5 minutes
-
-          while true; do
-            # Get GPU IDs where memory used is less than 100MB (free)
-            FREE_GPU_IDS=$(nvidia-smi --query-gpu=index,memory.used \
-                    --format=csv,noheader,nounits | \
-                    awk -F',' '$2 < 100 {print $1}' | tr -d ' ')
-
-            FREE_GPU_COUNT=$(echo "$FREE_GPU_IDS" | grep -c '[0-9]' || echo 0)
-
-            if [ "$FREE_GPU_COUNT" -ge "$REQUIRED_GPUS" ]; then
-              # Pick only the required number of GPUs
-              SELECTED_GPUS=$(echo "$FREE_GPU_IDS" | head -n "$REQUIRED_GPUS" | tr '\n' ',' | sed 's/,$//')
-              echo "Free GPUs found: $FREE_GPU_IDS"
-              echo "Selected GPUs : $SELECTED_GPUS"
-              echo "SELECTED_GPUS=$SELECTED_GPUS" >> $GITHUB_ENV
-            break
-            fi
-
-            if [ "$ELAPSED" -ge "$MAX_WAIT" ]; then
-              echo "Timeout! Could not get $REQUIRED_GPUS free GPUs after $MAX_WAIT seconds."
-              exit 1
-            fi
-
-            # Only log every 5 minutes
-            if [ "$((ELAPSED - LAST_LOG))" -ge "$LOG_INTERVAL" ]; then
-              echo "Still waiting for GPUs... ($((ELAPSED / 60)) minutes elapsed, $FREE_GPU_COUNT free)"
-              LAST_LOG=$ELAPSED
-            fi
-
-            sleep $INTERVAL
-            ELAPSED=$((ELAPSED + INTERVAL))
-          done
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Checkout PR head branch
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Install dependencies, create user.conf and run the YOLO benchmark
-        run: |
-          python3 -m venv gh_action_inference
-          source gh_action_inference/bin/activate
-          echo "Installing loadgen..."
-          cd loadgen
-          pip install -e .
-          echo "Installing dependencies for YOLO benchmark..."
-          cd ../vision/classification_and_detection/yolo
-          pip install -r requirements.txt
-          echo "Creating user.conf"
-          printf '%s\n' \
-                'yolo.Offline.max_query_count = 10' \
-                'yolo.Offline.min_query_count = 10' \
-                'yolo.Offline.min_duration = 0' \
-                > user.conf
-          echo "Creationg output path"
-          mkdir output
-          echo "Starting benchmark run..."
-          CUDA_VISIBLE_DEVICES=$SELECTED_GPUS python3 yolo_loadgen.py --model /data/common/anandhu/yolo-model/yolov11-checkpoint/yolo11l.pt --dataset-path /data/common/anandhu/yolo-data/yolo-coco2017-filtered-dataset/val2017_safe/ --annotation-file /data/common/anandhu/yolo-data/yolo-coco2017-filtered-dataset/val2017_safe/annotations/instances_val2017.json --count 10 --output output --PerformanceOnly --scenario Offline
-          echo "Output log"
-          cat output/mlperf_log_summary.txt
-          
-      - name: Clean workspace
-        run: |
-          rm -rf ${{ github.workspace }}
-          mkdir -p ${{ github.workspace }}
