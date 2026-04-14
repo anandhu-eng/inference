@@ -75,7 +75,7 @@ jobs:
           mkdir -p ${{ github.workspace }}
   
   yolo-on-gpu-with-manual-steps:
-    runs-on: [ self-hosted, mlc2 ]  # Points to your self-hosted runner with GPU
+    runs-on: [ self-hosted, mlc1, inference ]  # Points to your self-hosted runner with GPU
     environment: sef-hosted-runner-benchmark-approval
     concurrency:
       group: inference-gpu-runs
